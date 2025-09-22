@@ -1,0 +1,11 @@
+pydantic-ai
+pydantic-ai-slim[duckduckgo]
+fastapi
+uvicorn
+pydantic
+httpx
+beautifulsoup4
+python-multipart
+python-dotenv
+PyPDF2
+pymupdf

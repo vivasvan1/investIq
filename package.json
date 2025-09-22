@@ -9,10 +9,18 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "@types/multer": "^2.0.0",
     "axios": "^1.12.2",
+    "cheerio": "^1.1.2",
+    "mcp-handler": "^1.0.2",
+    "multer": "^2.0.2",
     "next": "15.5.3",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
