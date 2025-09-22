@@ -9,3 +9,8 @@ python-multipart
 python-dotenv
 PyPDF2
 pymupdf
+google-genai==1.28.0
+ollama
+tqdm
+pymilvus
+pymilvus[milvus_lite]
