@@ -30,10 +30,16 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="InvestIQ Backend", version="1.0.0")
 
-# CORS middleware
+# CORS middleware - Updated for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://investiq-*.vercel.app"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://35.200.237.52:8000",
+        "https://investiq-*.vercel.app",
+        "https://*.appspot.com",  # App Engine domain
+        "https://*.run.app"       # Cloud Run domain
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,7 +110,7 @@ async def chat(request: ChatRequest):
         # Run the agent
         agent = await create_agent()
         logger.info("Running InvestIQ agent...")
-        result = await agent.run(conversation_context, deps=deps)
+        result = await agent.run(conversation_context)
         logger.info(f"Agent result type: {type(result)}")
         logger.info(f"Agent result data type: {type(result.data) if hasattr(result, 'data') else 'No data attribute'}")
         
@@ -242,4 +248,9 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    
+    # Get port from environment variable (required for App Engine)
+    port = int(os.environ.get("PORT", 8000))
+    
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -8,7 +8,11 @@ google_search_tool = Tool(google_search=GoogleSearch())
 # === Set up your API key and project ===
 project_name = "Gemini"  # not required by SDK but keep for your reference
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+# Get API key from environment
+api_key = "AIzaSyDKykjkSPXZRcT0N_e6i3JL5q3ijlOt06s"
+os.environ["GEMINI_API_KEY"] = api_key
+
+client = genai.Client(api_key=api_key)
 
 async def gemini_inference(model_name: str, system_instruction: str, query: str, all_images: List[Dict]=None, web_search: bool=False):
     """

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mcpServer } from '@/lib/mcp-server';
+
+const BACKEND_URL = 'http://35.200.237.52:8000';
 
 export async function POST(request: NextRequest) {
   try {

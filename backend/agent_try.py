@@ -19,6 +19,9 @@ from pydantic_ai.messages import (
     ToolCallPartDelta,
 )
 
+api_key = "AIzaSyDKykjkSPXZRcT0N_e6i3JL5q3ijlOt06s"
+os.environ["GEMINI_API_KEY"] = api_key
+
 provider = GoogleProvider(api_key=os.environ.get("GEMINI_API_KEY"))
 model = GoogleModel('gemini-2.0-flash', provider=provider)
 output_messages: list[str] = []

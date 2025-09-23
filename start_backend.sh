@@ -38,7 +38,6 @@ echo "🔍 Checking if Ollama is running..."
 if ! curl -s http://localhost:11434/api/tags > /dev/null; then
     echo "⚠️  Ollama is not running. Please start Ollama first:"
     echo "   ollama serve"
-    echo "   ollama pull gemma3:4b"
     echo ""
     echo "Starting backend anyway, but it may not work without Ollama..."
 fi

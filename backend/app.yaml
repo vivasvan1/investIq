@@ -1,0 +1,47 @@
+# App Engine configuration for InvestIQ Backend
+runtime: python312
+
+# Entry point
+entrypoint: python main-appengine.py
+
+# Environment variables
+env_variables:
+  HOST: "0.0.0.0"
+  PORT: "8080"
+  RELOAD: "false"
+
+# Automatic scaling configuration
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+  target_cpu_utilization: 0.6
+  target_throughput_utilization: 0.6
+
+# Instance class (F1 is the smallest/cheapest)
+instance_class: F1
+
+# Health check configuration
+readiness_check:
+  path: "/api/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+liveness_check:
+  path: "/api/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+# Network configuration
+network:
+  forwarded_ports:
+    - 8080
+
+# Resource limits
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10

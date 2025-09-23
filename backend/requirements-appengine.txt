@@ -1,0 +1,24 @@
+# App Engine specific requirements
+# Note: Some packages may not be available on App Engine
+# This is a simplified version for App Engine deployment
+
+pydantic-ai
+pydantic-ai-slim[duckduckgo]
+fastapi
+uvicorn
+pydantic
+httpx
+beautifulsoup4
+python-multipart
+python-dotenv
+PyPDF2
+pymupdf
+google-genai==1.28.0
+ollama
+tqdm
+pymilvus
+pymilvus[milvus_lite]
+Pillow
+
+# Note: Ollama and pydantic-ai may not work on App Engine
+# Consider using Google's AI services instead

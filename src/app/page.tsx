@@ -1,78 +1,57 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import ChatInterface from '@/components/ChatInterface';
+import AnalysisAccordion from '@/components/AnalysisAccordion';
+import { parseAnalysisResponse } from '@/lib/json-parser';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'form' | 'chat'>('form');
-  const [formData, setFormData] = useState({
-    companyData: '',
-    pitchDeckText: '',
-    financials: '',
-    marketData: ''
-  });
-  const [pitchDeckImage, setPitchDeckImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState('');
-  const [imageAnalysis, setImageAnalysis] = useState('');
+  const [pitchDeckFile, setPitchDeckFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPitchDeckImage(file);
-      if (file.type === 'application/pdf') {
-        // For PDFs, show a PDF icon instead of preview
-        setImagePreview('data:image/svg+xml;base64,' + btoa(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14,2 14,8 20,8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10,9 9,9 8,9"></polyline>
-          </svg>
-        `));
-      } else {
-        // For images, show the actual image
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
+      if (file.type !== 'application/pdf') {
+        alert('Please upload a PDF file');
+        return;
       }
+      setPitchDeckFile(file);
+      // Show a PDF icon for preview
+      setFilePreview('data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14,2 14,8 20,8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10,9 9,9 8,9"></polyline>
+        </svg>
+      `));
     }
   };
 
-  const removeImage = () => {
-    setPitchDeckImage(null);
-    setImagePreview(null);
+  const removeFile = () => {
+    setPitchDeckFile(null);
+    setFilePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   const handleAnalyze = async () => {
+    if (!pitchDeckFile) {
+      alert('Please upload a PDF file first');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('companyData', formData.companyData);
-      formDataToSend.append('pitchDeckText', formData.pitchDeckText);
-      formDataToSend.append('financials', formData.financials);
-      formDataToSend.append('marketData', formData.marketData);
-      
-      if (pitchDeckImage) {
-        formDataToSend.append('pitchDeckImage', pitchDeckImage);
-      }
+      formDataToSend.append('pitchDeckImage', pitchDeckFile);
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -81,10 +60,9 @@ export default function Home() {
 
       const data = await response.json();
       setAnalysis(data.analysis);
-      setImageAnalysis(data.imageAnalysis || '');
     } catch (error) {
-      console.error('Error analyzing data:', error);
-      setAnalysis('Error: Could not connect to AI analysis service. Please ensure Ollama is running.');
+      console.error('Error analyzing PDF:', error);
+      setAnalysis({ error: 'Error: Could not connect to AI analysis service. Please ensure the backend is running.' });
     } finally {
       setIsLoading(false);
     }
@@ -148,199 +126,123 @@ export default function Home() {
         </div>
 
         {activeTab === 'form' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Input Form */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-              Company Information
-            </h3>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Company Overview
-                </label>
-                <textarea
-                  name="companyData"
-                  value={formData.companyData}
-                  onChange={handleInputChange}
-                  placeholder="Enter company name, description, founding team, mission, etc."
-                  className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Pitch Deck (Upload Image for AI Analysis)
-                </label>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* PDF Upload Section */}
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Upload Pitch Deck PDF
+                </h3>
                 
-                {/* Image Upload Section */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                        </svg>
-                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="font-semibold">Click to upload</span> pitch deck for AI analysis
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, PDF (MAX. 10MB)</p>
-                      </div>
-                      <input 
-                        ref={fileInputRef}
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*,.pdf"
-                        onChange={handleImageUpload}
-                      />
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Pitch Deck PDF
                     </label>
-                  </div>
-                  
-                  {imagePreview && (
-                    <div className="mt-4 relative">
-                      {pitchDeckImage?.type === 'application/pdf' ? (
-                        <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-16 h-16 mx-auto mb-2 text-gray-500 dark:text-gray-400">
-                              <img src={imagePreview} alt="PDF icon" className="w-full h-full" />
-                            </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-                              {pitchDeckImage.name}
+                    
+                    {/* PDF Upload Section */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-center w-full">
+                        <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg className="w-12 h-12 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                            </svg>
+                            <p className="mb-2 text-lg text-gray-500 dark:text-gray-400">
+                              <span className="font-semibold">Click to upload</span> your pitch deck PDF
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              PDF Document
-                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">PDF files only (MAX. 10MB)</p>
                           </div>
+                          <input 
+                            ref={fileInputRef}
+                            type="file" 
+                            className="hidden" 
+                            accept=".pdf"
+                            onChange={handleFileUpload}
+                          />
+                        </label>
+                      </div>
+                      
+                      {filePreview && (
+                        <div className="mt-4 relative">
+                          <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-16 h-16 mx-auto mb-2 text-gray-500 dark:text-gray-400">
+                                <img src={filePreview} alt="PDF icon" className="w-full h-full" />
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                                {pitchDeckFile?.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                PDF Document
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={removeFile}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handleAnalyze}
+                      disabled={isLoading || !pitchDeckFile}
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Analyzing PDF...
                         </div>
                       ) : (
-                        <img 
-                          src={imagePreview} 
-                          alt="Pitch deck preview" 
-                          className="w-full h-48 object-contain bg-gray-100 dark:bg-gray-800 rounded-lg"
-                        />
+                        'Analyze Pitch Deck'
                       )}
-                      <button
-                        onClick={removeImage}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
+                    </button>
+                  </div>
                 </div>
-
-                {/* Text Input as Alternative */}
-                <textarea
-                  name="pitchDeckText"
-                  value={formData.pitchDeckText}
-                  onChange={handleInputChange}
-                  placeholder="Or enter pitch deck summary manually (optional if image uploaded): problem, solution, market size, business model, etc."
-                  className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Financial Information
-                </label>
-                <textarea
-                  name="financials"
-                  value={formData.financials}
-                  onChange={handleInputChange}
-                  placeholder="Revenue, funding rounds, burn rate, growth metrics, unit economics, etc."
-                  className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Market Data & Web Research
-                </label>
-                <textarea
-                  name="marketData"
-                  value={formData.marketData}
-                  onChange={handleInputChange}
-                  placeholder="Market size, competitors, industry trends, regulatory environment, or include URLs for web research (e.g., https://example.com/company-news)"
-                  className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  💡 Tip: Include URLs in your input to automatically fetch and analyze web content
-                </p>
-              </div>
-
-              <button
-                onClick={handleAnalyze}
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Analyzing...
+              {/* Analysis Results */}
+              <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+                  Analysis Results
+                </h3>
+                
+                {analysis ? (
+                  <div className="h-full">
+                    {analysis.error ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-red-600 dark:text-red-400 font-medium">
+                          {String(analysis.error)}
+                        </p>
+                      </div>
+                    ) : (
+                      <AnalysisAccordion analysis={parseAnalysisResponse(analysis as Record<string, unknown>)} />
+                    )}
                   </div>
                 ) : (
-                  'Analyze Investment Opportunity'
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Upload a pitch deck PDF and click &quot;Analyze Pitch Deck&quot; to get AI-powered insights
+                    </p>
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
-          </div>
-
-          {/* Analysis Results */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-              AI Analysis Results
-            </h3>
-            
-            {analysis ? (
-              <div className="space-y-6">
-                {imageAnalysis && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center mb-4">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded-lg flex items-center justify-center mr-3">
-                        <span className="text-blue-600 dark:text-blue-300 text-lg">📊</span>
-                      </div>
-                      <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                        Pitch Deck Analysis
-                      </h4>
-                    </div>
-                    <div className="prose prose-blue dark:prose-invert dark:prose-blue-200 prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {imageAnalysis}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center mr-3">
-                      <span className="text-green-600 dark:text-green-300 text-lg">💼</span>
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Investment Analysis
-                    </h4>
-                  </div>
-                  <div className="prose prose-gray dark:prose-invert dark:prose-gray-300 max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {analysis}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Enter company information and click &quot;Analyze Investment Opportunity&quot; to get AI-powered insights
-                </p>
-              </div>
-            )}
-          </div>
           </div>
         ) : (
           <div className="max-w-6xl mx-auto">

@@ -14,3 +14,4 @@ ollama
 tqdm
 pymilvus
 pymilvus[milvus_lite]
+Pillow
