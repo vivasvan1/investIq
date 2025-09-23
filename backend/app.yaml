@@ -2,7 +2,7 @@
 runtime: python312
 
 # Entry point
-entrypoint: python main-appengine.py
+entrypoint: python main.py
 
 # Environment variables
 env_variables:
