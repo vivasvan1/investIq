@@ -34,11 +34,11 @@ app = FastAPI(title="InvestIQ Backend", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://investiq-app.vercel.app",
+        "https://0woqa3vaag9y.share.zrok.io",
         "http://localhost:3000",
-        "http://35.200.237.52:8000",
-        "https://investiq-*.vercel.app",
-        "https://*.appspot.com",  # App Engine domain
-        "https://*.run.app",  # Cloud Run domain
+        "http://localhost:8000",
+        "*"  # Fallback for development
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -266,6 +266,11 @@ async def analyze_pdf_endpoint(
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=error_msg)
 
+
+@app.options("/api/analyze-pdf")
+async def analyze_pdf_options():
+    """Handle CORS preflight requests for PDF analysis."""
+    return {"message": "OK"}
 
 @app.get("/api/health")
 async def health_check():

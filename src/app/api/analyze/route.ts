@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
-const BACKEND_URL = 'http://35.200.237.52:8000';
+const BACKEND_URL = 'https://0woqa3vaag9y.share.zrok.io';
 
 export async function POST(request: NextRequest) {
   try {

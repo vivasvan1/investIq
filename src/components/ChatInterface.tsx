@@ -134,7 +134,7 @@ export default function ChatInterface({
       formData.append("pdf_file", file);
       formData.append("analysis_type", "investment_document");
 
-      const response = await fetch("http://localhost:8000/api/analyze-pdf", {
+      const response = await fetch("https://0woqa3vaag9y.share.zrok.io/api/analyze-pdf", {
         method: "POST",
         body: formData,
       });
